@@ -138,4 +138,3 @@ def probe():
             return containment_probe(path)
         except SandboxError as exc:
             raise HTTPException(503, detail=str(exc)) from exc
-
