@@ -1,0 +1,4 @@
+..............                                                           [100%]
+14 passed in 0.26s
+
+Local environment: Python 3.13.5; Docker CLI unavailable; Vultr inference key absent; no API usage.

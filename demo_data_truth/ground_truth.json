@@ -1,0 +1,37 @@
+{
+  "expected": {
+    "INV-1001": "supplier_mismatch",
+    "INV-1002": "ambiguous_supplier_identity",
+    "INV-1003": "unknown_supplier",
+    "INV-1004": "over_billed_quantity",
+    "INV-1005": "invoice_exceeds_goods_received",
+    "INV-1006": "package_unit_overcharge",
+    "INV-1007": "duplicate_invoice_number",
+    "INV-1008B": "split_invoice_total_exceeds_receipt",
+    "INV-1009": "consolidated_invoice_exceeds_receipt",
+    "INV-1010": "price_variance",
+    "INV-1011": "arithmetic_mismatch",
+    "INV-1012": "missing_purchase_reference",
+    "CRN-1013": "unlinked_credit_note",
+    "INV-1014": "product_code_conflict",
+    "INV-1015": "hostile_instruction_in_invoice_note"
+  },
+  "count": 15,
+  "clean_primary_invoices": [
+    "INV-1016",
+    "INV-1017",
+    "INV-1018",
+    "INV-1019",
+    "INV-1020",
+    "INV-1021",
+    "INV-1022",
+    "INV-1023",
+    "INV-1024",
+    "INV-1025",
+    "INV-1026",
+    "INV-1027",
+    "INV-1028",
+    "INV-1029"
+  ],
+  "notes": "Test fixture only. All identities and values are invented. Golden truth must never be sent to the model."
+}
