@@ -1,6 +1,6 @@
 # ExceptionForge — technical decision gate
 
-**Date:** 04/11/2026 | **Track:** Blast Radius Zero, Pattern A | **Status:** UNVERIFIED
+**Initial date:** 04/11/2026 · **Stage 2 revision:** 07/11/2026 | **Track:** Blast Radius Zero, Pattern A | **Status:** UNVERIFIED
 
 ## What must be demonstrably true before GO
 
@@ -15,7 +15,7 @@
 | Failure safety | Test missing key, missing Docker and invalid CSV | No generated code runs on host; errors clearly shown |
 | Deployment | On an approved Vultr VM, repeat tests and capture dated logs | End-to-end evidence from actual submission environment |
 
-**Decision by evening 04/11/2026:** if any mandatory criterion fails, simplify the synthetic fixture once, retest against the SAME immutable truth and declare NO-GO if it still fails. A failed security gate cannot be bypassed by simplification.
+**Decision before the final submission deadline:** if any mandatory criterion fails, simplify the synthetic fixture once, retest against the SAME immutable truth and declare NO-GO if it still fails. A failed security gate cannot be bypassed by simplification.
 
 ## Provenance and honest limitations
 
@@ -35,3 +35,14 @@ Keep the real API model ID, end-to-end JSON, independent evaluation JSON, contai
 - API/UI authored; tests runnable locally.
 - Docker execution and Vultr inference: **not verified** in this work environment.
 - Vultr VM / hosted URL: **not deployed**.
+
+## Stage 2 local verification, 07/11/2026
+
+- Editable package installation corrected and verified locally.
+- All 26 Python unit/failure-path tests passed. Model and Docker calls in these tests are mocked, not live.
+- CSV evidence references now reflect physical source lines even when source fields contain newlines. A text mention inside a note cannot masquerade as the invoice ID.
+- An invalid model report can be fed back for repair, respecting the limit of three corrections.
+- Real localhost HTTP negative responses were 503 for absent inference key and absent Docker.
+- Desktop UI tested at 1280×720, 1366×768; no page scroll, with the confirmation and results in the same view. Static report layout preview is not proof of real analysis.
+
+**NOT verified:** any actual sandbox or Vultr usage. This release is deliberately not labelled a successful deployed demo.

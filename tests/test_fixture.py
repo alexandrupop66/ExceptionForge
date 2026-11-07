@@ -41,7 +41,7 @@ def test_source_reference_must_exist(tmp_path: Path):
     import pytest
     from app.sandbox import SandboxError
     with pytest.raises(SandboxError, match="Ungrounded"):
-        _check_evidence({"findings": [{"invoice_ref": "FAKE", "reason": "Invalid", "evidence": ["invoices.csv:2"]}]}, tmp_path)
+        _check_evidence({"findings": [{"invoice_ref": "FAKE", "kind": "test_finding", "reason": "Invalid", "evidence": ["invoices.csv:2"]}]}, tmp_path)
 
 
 def test_cited_invoice_row_is_checked(tmp_path: Path):
@@ -49,10 +49,10 @@ def test_cited_invoice_row_is_checked(tmp_path: Path):
     from app.sandbox import SandboxError
     import pytest
     with pytest.raises(SandboxError, match="Ungrounded"):
-        _check_evidence({"findings": [{"invoice_ref": "INV-1028", "reason": "Sample", "evidence": ["invoices.csv:2"]}]}, tmp_path)
+        _check_evidence({"findings": [{"invoice_ref": "INV-1028", "kind": "test_finding", "reason": "Sample", "evidence": ["invoices.csv:2"]}]}, tmp_path)
 
 def test_valid_invoice_citation_and_hostile_security_note(tmp_path: Path):
     generate(tmp_path)
-    result = _check_evidence({"findings": [{"invoice_ref": "INV-1001", "reason": "Mismatch", "evidence": ["invoices.csv:2", "purchase_orders.csv:2"]}]}, tmp_path)
+    result = _check_evidence({"findings": [{"invoice_ref": "INV-1001", "kind": "supplier_mismatch", "reason": "Mismatch", "evidence": ["invoices.csv:2", "purchase_orders.csv:2"]}]}, tmp_path)
     assert any(f["invoice_ref"] == "INV-1001" for f in result["findings"])
     assert any(f["invoice_ref"] == "INV-1015" for f in result["findings"])

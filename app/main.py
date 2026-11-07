@@ -16,7 +16,7 @@ from fastapi.responses import FileResponse
 from .inference import analyse
 from .sandbox import SandboxError, containment_probe
 
-app = FastAPI(title="ExceptionForge", version="0.1.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="ExceptionForge", version="0.2.0", docs_url=None, redoc_url=None)
 ROOT = Path(__file__).resolve().parent
 FILENAMES = ("purchase_orders.csv", "goods_receipts.csv", "invoices.csv")
 MAX_UPLOAD = 300_000
@@ -30,7 +30,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"service": "exceptionforge", "version": "0.1.0", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "docker-required", "vultr_deployment": "not-verified"}
+    return {"service": "exceptionforge", "version": "0.2.0", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "docker-required", "vultr_deployment": "not-verified"}
 
 
 def _save_upload(upload: UploadFile, target: Path) -> None:
@@ -39,12 +39,23 @@ def _save_upload(upload: UploadFile, target: Path) -> None:
         raise HTTPException(413, detail="Maximum 300 KB per file")
     try:
         value = raw.decode("utf-8-sig")
-        reader = csv.DictReader(io.StringIO(value))
-        if not reader.fieldnames or len(reader.fieldnames) > 60 or any(not x or len(x) > 100 for x in reader.fieldnames):
+        if "\x00" in value:
+            raise ValueError("NUL bytes are not allowed")
+        reader = csv.DictReader(io.StringIO(value, newline=""), strict=True)
+        headers = reader.fieldnames
+        if not headers or len(headers) > 60 or any(not x or len(x) > 100 for x in headers):
             raise ValueError("Invalid CSV header")
-        rows = list(reader)
-        if not rows or len(rows) > 3000:
-            raise ValueError("CSV must contain 1–3,000 records")
+        if len(set(headers)) != len(headers):
+            raise ValueError("Duplicate CSV headers")
+        record_count = 0
+        for row in reader:
+            if None in row:
+                raise ValueError("CSV record contains extra unlabelled columns")
+            record_count += 1
+            if record_count > 3000:
+                raise ValueError("CSV exceeds 3,000 records")
+        if not record_count:
+            raise ValueError("CSV has no records")
     except (UnicodeError, csv.Error, ValueError) as exc:
         raise HTTPException(422, detail=f"Invalid CSV: {exc}") from exc
     target.write_bytes(raw)
@@ -59,7 +70,9 @@ def _source_security_findings(invoice_path: Path) -> list[dict]:
     """
     found = []
     with invoice_path.open(encoding="utf-8-sig", newline="") as handle:
-        for number, row in enumerate(csv.DictReader(handle), start=2):
+        reader = csv.DictReader(handle)
+        for row in reader:
+            number = reader.line_num  # Physical line, not logical record count.
             ref = next((v for k, v in row.items() if k and re.search(r"bill|invoice", k, re.I) and v), None)
             for key, value in row.items():
                 if key and re.search(r"note|comment|memo", key, re.I) and value and DANGEROUS_NOTE.search(value):
@@ -76,24 +89,38 @@ def _check_evidence(report: dict, data_dir: Path) -> dict:
     file_rows = {}
     for filename in FILENAMES:
         with (data_dir / filename).open(encoding="utf-8-sig", newline="") as handle:
-            file_rows[filename] = list(csv.DictReader(handle))
+            reader = csv.DictReader(handle)
+            file_rows[filename] = {reader.line_num: row for row in reader}
+    findings = report.get("findings")
+    if not isinstance(findings, list) or len(findings) > 250:
+        raise SandboxError("Invalid finding count")
     validated = []
-    for finding in report.get("findings", []):
-        if not isinstance(finding, dict) or not isinstance(finding.get("invoice_ref"), str):
-            raise SandboxError("Finding lacks an invoice reference")
-        if not isinstance(finding.get("reason"), str) or not isinstance(finding.get("evidence"), list) or not finding["evidence"]:
-            raise SandboxError("Finding missing reason or evidence")
+    for finding in findings:
+        if not isinstance(finding, dict) or not isinstance(finding.get("invoice_ref"), str) or not finding["invoice_ref"].strip() or len(finding["invoice_ref"]) > 120:
+            raise SandboxError("Finding lacks a valid invoice reference")
+        if not isinstance(finding.get("kind"), str) or not finding["kind"].strip() or len(finding["kind"]) > 120:
+            raise SandboxError("Finding lacks a valid exception type")
+        if not isinstance(finding.get("reason"), str) or not 2 <= len(finding["reason"]) <= 1200:
+            raise SandboxError("Finding missing a valid reason")
+        if not isinstance(finding.get("evidence"), list) or not 1 <= len(finding["evidence"]) <= 12:
+            raise SandboxError("Finding missing valid evidence")
         linked_invoice = False
         for reference in finding["evidence"]:
-            match = re.fullmatch(r"(purchase_orders\.csv|goods_receipts\.csv|invoices\.csv):(\d+)", str(reference))
+            if not isinstance(reference, str):
+                raise SandboxError("Invalid evidence reference type")
+            match = re.fullmatch(r"(purchase_orders\.csv|goods_receipts\.csv|invoices\.csv):(\d+)", reference)
             if not match:
                 raise SandboxError("Invalid evidence format: expected CSV filename:row")
             filename, ntext = match.groups()
-            index = int(ntext) - 2  # CSV physical row 1 is header.
-            if index < 0 or index >= len(file_rows[filename]):
+            row = file_rows[filename].get(int(ntext))
+            if row is None:
                 raise SandboxError("Evidence points beyond input file")
-            if filename == "invoices.csv" and finding["invoice_ref"] in file_rows[filename][index].values():
-                linked_invoice = True
+            if filename == "invoices.csv":
+                # A reference mentioned in an invoice *note* is not the invoice ID.
+                identifiers = [value for key, value in row.items()
+                               if key and re.search(r"bill|invoice", key, re.I)]
+                if finding["invoice_ref"] in identifiers:
+                    linked_invoice = True
         if not linked_invoice:
             raise SandboxError("Ungrounded finding: invoice reference absent from cited source row")
         validated.append(finding)
@@ -117,8 +144,7 @@ def analyse_files(
         for upload, filename in zip((purchase_orders, goods_receipts, invoices), FILENAMES):
             _save_upload(upload, source / filename)
         try:
-            result = analyse(source)
-            result["report"] = _check_evidence(result["report"], source)
+            result = analyse(source, validate_report=lambda report: _check_evidence(report, source))
             result["elapsed_seconds"] = round(time.monotonic() - start, 3)
             result["security_notice"] = "Invoice text was treated as untrusted data. No payment actions are supported."
             return result

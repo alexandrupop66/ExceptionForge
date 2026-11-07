@@ -2,27 +2,136 @@
 <html lang="en-GB">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ExceptionForge | Procurement investigation</title>
+<meta name="theme-color" content="#091522">
+<title>ExceptionForge · Evidence-led procurement investigations</title>
 <style>
-:root{font-family:Inter,ui-sans-serif,system-ui,Arial;color:#ecf1f6;background:#0c1521}*{box-sizing:border-box}
-body{margin:0}main{max-width:1000px;margin:0 auto;padding:38px 22px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:64px;gap:12px}header b{letter-spacing:-.03em;font-size:21px}.tag{color:#9baac1;font-size:12px;border:1px solid #354456;padding:7px 12px;border-radius:999px}
-.hero{max-width:760px}.eyebrow{color:#71ddb9;letter-spacing:.15em;font-size:12px;font-weight:700;text-transform:uppercase}h1{font-size:clamp(34px,6vw,58px);line-height:1.05;letter-spacing:-.055em;margin:13px 0 22px}p{line-height:1.6;color:#afbed0;font-size:16px}
-.panel{background:#121f2e;border:1px solid #2d4153;border-radius:18px;padding:26px;margin:34px 0;box-shadow:0 28px 70px #07111d70}h2{font-size:19px;margin:0 0 8px}label{font-size:14px;font-weight:650;color:#d9e6f1}input[type=file]{margin-top:10px;max-width:100%;font-size:12px;color:#b3c2d2}input::file-selector-button{background:#263747;color:#e8f0f7;border:1px solid #486176;padding:10px 14px;border-radius:8px;margin-right:12px;cursor:pointer}
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}.field{border:1px solid #34495e;border-radius:12px;padding:17px;min-width:0}.hint{display:block;font-size:12px;color:#88a2b8;margin:5px 0 12px}button{background:#68e1b5;color:#09291e;padding:13px 20px;border:0;border-radius:10px;font-size:14px;font-weight:750;cursor:pointer}button:disabled{opacity:.55;cursor:wait}.subtle{background:#25364a;color:#d9e9f9} .actions{display:flex;align-items:center;gap:15px;flex-wrap:wrap;margin-top:24px}.status{font-size:13px;color:#bcccdc}#result{margin-top:20px;display:none}pre{background:#09121e;border:1px solid #2e4254;border-radius:10px;padding:18px;white-space:pre-wrap;word-break:break-word;max-height:350px;overflow:auto;font-size:12px;color:#d9e8f5}
-.metrics{display:flex;gap:12px;flex-wrap:wrap;margin:18px 0}.metric{background:#0c1724;border:1px solid #304458;border-radius:11px;padding:17px;min-width:130px}.metric b{display:block;font-size:27px}.metric small{color:#96aabe}.item{border-bottom:1px solid #314355;padding:16px 0}.item b{color:#ffdd92}.item p{font-size:13px;margin:7px 0}.error{color:#ffacaf!important}footer{padding:30px 0;color:#71869b;font-size:12px}
-@media(max-width:740px){.grid{grid-template-columns:1fr}header{margin-bottom:38px}.panel{padding:19px}h1{font-size:39px}}
-</style></head>
-<body><main><header><b>Exception<span style="color:#68e1b5">Forge</span></b><span class="tag">Vultr Agent Rush · Track 1</span></header>
-<section class="hero"><div class="eyebrow">Evidence first. No payment permissions.</div><h1>Investigate what your ERP cannot match.</h1><p>Upload three incompatible procurement exports. An AI agent writes dataset-specific analysis code, executes it inside a restricted container and returns evidence-linked exceptions for human review.</p></section>
-<section class="panel"><h2>Investigate three exports</h2><p>CSV only. For this hackathon prototype, use synthetic test data, not sensitive supplier records.</p>
-<form id="form"><div class="grid"><div class="field"><label for="po">1. Purchase orders</label><span class="hint">Ordered goods and agreed prices</span><input id="po" name="purchase_orders" type="file" accept=".csv,text/csv" required></div><div class="field"><label for="gr">2. Goods receipts</label><span class="hint">Delivered quantities and units</span><input id="gr" name="goods_receipts" type="file" accept=".csv,text/csv" required></div><div class="field"><label for="inv">3. Invoices</label><span class="hint">Billed amounts and supplier notes</span><input id="inv" name="invoices" type="file" accept=".csv,text/csv" required></div></div>
-<div class="actions"><button id="go" type="submit">Investigate exceptions</button><span id="state" class="status">No files uploaded.</span></div></form></section>
-<section id="result" class="panel"><h2>Investigation report</h2><div class="actions"><button id="save" class="subtle" type="button">Save report JSON</button></div><div id="metrics" class="metrics"></div><div id="findings"></div><details><summary>Executed Python code and evidence</summary><pre id="code"></pre></details></section>
-<section class="panel"><h2>Prove the sandbox boundary</h2><p>This controlled test attempts a network connection from the same restricted container. The result is only PASS when the real execution records a blocked attempt.</p><div class="actions"><button id="probe" class="subtle">Run live containment test</button><span id="probeStatus" class="status">Not tested</span></div><pre id="probeOutput" style="display:none"></pre></section>
-<footer>ExceptionForge is a decision-support prototype. It never authorises payments. No live Vultr or Docker claims are made without observed results.</footer>
+:root{color-scheme:dark;font-family:Inter,"Segoe UI",Arial,sans-serif;background:#091522;color:#eaf1f8}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%}button,input{font:inherit}
+button{cursor:pointer}button:disabled{cursor:wait;opacity:.6}
+button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #84dfbf;outline-offset:3px}
+.shell{max-width:1620px;height:100dvh;min-height:630px;margin:auto;padding:19px 26px 16px;display:flex;flex-direction:column;gap:14px}
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:38px}
+.brand{font-size:22px;font-weight:850;letter-spacing:-.055em}.brand span{color:#77e5bc}.eyebrow{font-size:11px;font-weight:760;letter-spacing:.11em;color:#91c8b6;text-transform:uppercase}
+.meta{font-size:12px;color:#96acbf;border:1px solid #30465b;background:#142537;padding:9px 13px;border-radius:999px;white-space:nowrap}
+.intro{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:4px 0 2px}
+.intro h1{font-size:clamp(29px,3.1vw,42px);line-height:1.08;letter-spacing:-.056em;margin:6px 0 0;max-width:840px}
+.intro p{max-width:365px;margin:0 0 2px;color:#b6c6d5;font-size:14px;line-height:1.5}
+.workspace{min-height:0;flex:1;display:grid;grid-template-columns:minmax(365px,0.88fr) minmax(0,1.32fr);gap:15px}
+.panel{min-width:0;min-height:0;border:1px solid #2d465b;border-radius:18px;background:#102234;box-shadow:0 14px 38px #020a1266;overflow:hidden}
+.inputs{padding:22px;display:flex;flex-direction:column;gap:15px}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel h2{font-size:19px;letter-spacing:-.025em;line-height:1.2;margin:0}
+.panel-sub{color:#a8bccd;font-size:13px;line-height:1.45;margin:5px 0 0}
+.counter{font-size:12px;color:#98ddc4;background:#153b3a;border:1px solid #2c6454;padding:5px 9px;border-radius:999px;white-space:nowrap}
+.upload-list{display:flex;flex-direction:column;gap:9px}
+.upload{display:flex;align-items:center;gap:12px;border-radius:12px;border:1px solid #355064;background:#142a3d;padding:11px 13px;min-height:70px;transition:border-color .15s,background .15s}
+.upload:focus-within,.upload.ready{border-color:#4c997d;background:#16343d}
+.upload-index{flex:0 0 30px;width:30px;height:30px;display:grid;place-items:center;border-radius:9px;background:#294359;color:#cfdfec;font-size:13px;font-weight:750}
+.upload.ready .upload-index{background:#23664f;color:#c5ffe8}
+.upload-text{min-width:0;flex:1}.upload-text label{display:block;font-size:14px;font-weight:730}.file-state{display:block;color:#a0b6c8;font-size:12px;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+input[type=file]{position:absolute;opacity:0;width:1px;height:1px}
+.choose{border:1px solid #50677c;background:#223c50;color:#e3eef7;padding:8px 12px;font-size:12px;border-radius:8px;white-space:nowrap}
+.upload:focus-within .choose{outline:2px solid #84dfbf;outline-offset:2px}
+.main-action{border:0;background:#76e4ba;color:#092b23;border-radius:10px;padding:13px 18px;min-height:44px;font-size:14px;font-weight:800;box-shadow:0 5px 18px #0b65434d}
+.main-action:hover:not(:disabled){background:#9bf3d0}.secondary{border:1px solid #4c667c;background:#20374b;color:#dfeaf4;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:700;min-height:36px}.secondary:hover:not(:disabled){background:#2c4c62}
+.cta-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.notice{font-size:12px;color:#a4bbcb;line-height:1.45;margin:0}
+.status{font-size:12px;line-height:1.45;min-height:20px;color:#b9d2e2}.status.error{color:#ffb5ad}.status.ok{color:#96f3c6}
+.boundary{border:1px solid #345264;border-radius:12px;background:#0e1e2d;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:14px;margin-top:auto}
+.boundary b{font-size:14px}.boundary p{margin:5px 0 0;line-height:1.4;color:#9eb4c8;font-size:12px}
+.boundary-state{font-size:11px;font-weight:800;color:#e0bd7f;letter-spacing:.02em}
+.outputs{display:flex;flex-direction:column;padding:21px;gap:13px}
+.output-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.output-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.output-actions button{padding:7px 10px;min-height:32px}
+.placeholder{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed #38566b;border-radius:13px;background:radial-gradient(ellipse at 50% 0%,#1a3b4a 0%,#102234 66%);padding:30px}
+.placeholder .symbol{display:grid;place-items:center;margin:0 auto 16px;width:66px;height:66px;border-radius:20px;background:#1c4a48;border:1px solid #3d7f70;color:#9cf2cf;font-size:28px;font-weight:750}
+.placeholder h3{font-size:22px;margin:0 0 7px;letter-spacing:-.03em}.placeholder p{color:#b1c4d4;font-size:14px;line-height:1.5;max-width:390px;margin:0 auto}
+.report{min-height:0;display:flex;flex:1;flex-direction:column;gap:10px}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.metric{border-radius:10px;background:#152e40;border:1px solid #2e4b60;padding:10px 12px;min-width:0}
+.metric b{font-size:25px;display:block;line-height:1.1;letter-spacing:-.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.metric span{display:block;font-size:11px;color:#a2bacd;margin-top:5px}
+.records-head{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:35px}
+.records-head h3,.detail h3{font-size:13px;letter-spacing:.025em;text-transform:uppercase;color:#b3cad8;margin:0}
+.pager{display:flex;align-items:center;gap:8px;font-size:11px;color:#9db3c5}
+.pager button{min-width:30px;height:28px;padding:0;border:1px solid #496274;background:#233a4c;color:#dcecf7;border-radius:7px}
+.findings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:8px;flex:1;min-height:0}
+.finding{padding:12px;text-align:left;border:1px solid #3a5368;background:#142a3b;color:#dce9f4;border-radius:10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;min-width:0}
+.finding:hover{background:#1c3549}.finding.selected{border-color:#6de0b6;box-shadow:inset 3px 0 #6de0b6;background:#17383d}
+.finding .ref{font-weight:800;font-size:14px;color:#f6f8fb;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finding .type{font-size:11px;color:#91e7c5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.finding .reason{font-size:12px;color:#b1c7d6;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.4}
+.detail{background:#0b1c2b;border:1px solid #345166;border-radius:11px;padding:13px 15px;min-height:125px;flex:0 0 auto}
+.detail-title{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0 6px;font-size:14px;font-weight:750;color:#f2f6fa}
+.detail p{margin:0 0 7px;color:#b9d1e0;line-height:1.4;font-size:12px;max-height:48px;overflow:hidden}
+.evidence{font-size:11px;color:#8ae0bb;word-break:break-word;line-height:1.35}
+.probe-view{flex:1;display:flex;flex-direction:column;gap:14px;min-height:0;border:1px solid #36566b;border-radius:13px;background:#0e2130;padding:18px}
+.probe-view h3{font-size:22px;margin:0;letter-spacing:-.025em}.probe-view p{font-size:13px;color:#b9cbd9;line-height:1.5;margin:0}
+.probe-output{white-space:pre-wrap;overflow:auto;flex:1;min-height:0;border:1px solid #395669;border-radius:9px;background:#091724;padding:15px;color:#b8d4e4;font-size:12px;line-height:1.5}
+.result-mark{display:inline-block;border:1px solid #735a42;background:#382a26;color:#ffcd99;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:800;align-self:flex-start}
+.result-mark.pass{border-color:#3f8469;background:#194037;color:#adf5cc}.result-mark.fail{border-color:#ac5558;background:#47272b;color:#ffbcbb}
+footer{display:flex;justify-content:space-between;gap:12px;align-items:center;min-height:16px;color:#7f9bad;font-size:11px}
+[hidden]{display:none!important}
+dialog{border:1px solid #436277;border-radius:16px;background:#0f2131;color:#e8f4ff;padding:20px;width:min(920px,92vw);max-height:80dvh}
+dialog::backdrop{background:#020913c9}dialog header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}dialog h2{margin:0;font-size:18px}dialog pre{max-height:62dvh;overflow:auto;white-space:pre-wrap;word-break:break-word;font-size:12px;color:#bed8e9;line-height:1.5}
+@media(max-width:1080px){.intro p{max-width:275px}.workspace{grid-template-columns:minmax(325px,.91fr) minmax(0,1.09fr)}.shell{padding:15px;gap:12px}.inputs,.outputs{padding:15px}.intro h1{font-size:31px}.boundary{padding:12px}.upload{padding:9px;min-height:63px}}
+@media(min-width:701px) and (max-height:740px){.shell{gap:9px;padding-top:10px;padding-bottom:10px}.intro h1{font-size:31px}.intro p{font-size:12px}.inputs,.outputs{gap:9px}.upload{min-height:56px}.boundary{padding:10px}.detail{min-height:99px;padding:10px}.finding{padding:8px}.metric{padding:7px}.metric b{font-size:22px}}
+@media(max-width:700px){.meta{max-width:168px;white-space:normal;text-align:right;line-height:1.2}.shell{height:auto;min-height:100dvh;padding:15px;gap:17px}.meta{font-size:10px;padding:6px}.intro{display:block}.intro h1{font-size:34px}.intro p{max-width:none;margin-top:12px;font-size:14px}.workspace{display:flex;flex-direction:column}.panel{overflow:visible}.inputs,.outputs{padding:17px}.outputs{min-height:445px}.boundary{margin-top:8px}.findings{min-height:200px}.report{min-height:420px}.placeholder{min-height:340px}footer{line-height:1.5}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="masthead"><div class="brand">Exception<span>Forge</span></div><span class="meta">Vultr Agent Rush 2026 · Blast Radius Zero</span></header>
+  <div class="intro"><div><div class="eyebrow">Evidence before action</div><h1>Investigate what your ERP cannot match.</h1></div><p>Three incompatible exports. One evidence-led investigation. Generated analysis runs in a restricted container, never on the host.</p></div>
+  <main class="workspace">
+    <section class="panel inputs" aria-labelledby="inputHeading">
+      <div class="panel-head"><h2 id="inputHeading">Source documents</h2><span class="counter" id="fileCount">0 / 3 ready</span></div>
+      <p class="panel-sub">Upload the three CSV exports. For this prototype, use only synthetic data.</p>
+      <form id="form">
+        <div class="upload-list">
+          <div class="upload" id="wrap-po"><span class="upload-index">01</span><div class="upload-text"><label for="po">Purchase orders</label><span class="file-state" id="poName">No file selected</span></div><label class="choose" for="po">Choose CSV</label><input id="po" name="purchase_orders" type="file" accept=".csv,text/csv" required></div>
+          <div class="upload" id="wrap-gr"><span class="upload-index">02</span><div class="upload-text"><label for="gr">Goods receipts</label><span class="file-state" id="grName">No file selected</span></div><label class="choose" for="gr">Choose CSV</label><input id="gr" name="goods_receipts" type="file" accept=".csv,text/csv" required></div>
+          <div class="upload" id="wrap-inv"><span class="upload-index">03</span><div class="upload-text"><label for="inv">Supplier invoices</label><span class="file-state" id="invName">No file selected</span></div><label class="choose" for="inv">Choose CSV</label><input id="inv" name="invoices" type="file" accept=".csv,text/csv" required></div>
+        </div>
+        <div class="cta-row" style="margin-top:16px"><button id="go" class="main-action" type="submit">Investigate exceptions</button><span class="status" id="state" role="status" aria-live="polite">Choose all three sources to begin.</span></div>
+      </form>
+      <p class="notice">No payment approvals or transfers. Findings are suggestions for human review, not confirmed fraud.</p>
+      <div class="boundary"><div><b>Sandbox boundary</b><p>Live isolation check, not a simulated result.<br><span class="boundary-state" id="probeStatus">NOT TESTED</span></p></div><button id="probe" class="secondary" type="button">Test containment</button></div>
+    </section>
+    <section class="panel outputs" aria-labelledby="outputHeading">
+      <div class="output-head"><div><h2 id="outputHeading">Investigation workspace</h2><p class="panel-sub" id="outputSubtitle">No analysis has been run.</p></div><div class="output-actions"><button class="secondary" id="back" type="button" hidden>View findings</button><button class="secondary" id="viewCode" type="button" hidden>View code</button><button class="secondary" id="save" type="button" hidden>Export JSON</button></div></div>
+      <div class="placeholder" id="empty"><div><div class="symbol" aria-hidden="true">⌕</div><h3>Ready for an investigation</h3><p>Load the three exports and run the agent. Findings, evidence and status will appear here without changing screens.</p></div></div>
+      <div class="report" id="report" hidden>
+        <div class="metrics" id="metrics"></div>
+        <div class="records-head"><h3>Exceptions requiring review</h3><div class="pager"><span id="pageLabel"></span><button id="prev" aria-label="Previous findings" type="button">‹</button><button id="next" aria-label="Next findings" type="button">›</button></div></div>
+        <div class="findings" id="findings" aria-label="Exception findings"></div>
+        <div class="detail" id="detail" aria-live="polite"></div>
+      </div>
+      <div class="probe-view" id="probeView" hidden><div class="eyebrow">Independent live test</div><h3>Network containment</h3><p>Test code attempts a connection to 192.0.2.1:443 inside the constrained Docker runner. PASS is displayed only if execution actually reports a blocked connection.</p><span class="result-mark" id="probeResult">NOT TESTED</span><pre class="probe-output" id="probeOutput">No Docker test has been executed.</pre></div>
+    </section>
+  </main>
+  <footer><span>ExceptionForge · Original hackathon prototype · All demo data synthetic</span><span>Stage 2 · Live Vultr integration not yet verified</span></footer>
+</div>
+<dialog id="codeDialog" aria-labelledby="codeTitle"><header><h2 id="codeTitle">Agent-generated Python</h2><button class="secondary" id="closeCode" type="button">Close</button></header><pre id="code"></pre></dialog>
 <script>
-let latestResponse=null; const $=id=>document.getElementById(id); const escapeHtml=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-$('form').addEventListener('submit',async event=>{event.preventDefault();$('go').disabled=true;$('state').textContent='Generating and executing analysis…';$('state').className='status';$('result').style.display='none';try{const body=new FormData(event.target);const r=await fetch('/api/analyse',{method:'POST',body});const j=await r.json();if(!r.ok)throw Error(j.detail||'Analysis unavailable');latestResponse=j;const findings=j.report.findings||[];$('metrics').innerHTML=`<div class="metric"><b>${findings.length}</b><small>Exceptions</small></div><div class="metric"><b>${j.report.analysed_invoices}</b><small>Invoices analysed</small></div><div class="metric"><b>${j.elapsed_seconds}s</b><small>Elapsed time</small></div><div class="metric"><b>${j.attempts-1}</b><small>Code corrections</small></div>`;$('findings').innerHTML=findings.length?findings.map(f=>`<div class="item"><b>${escapeHtml(f.invoice_ref)} · ${escapeHtml(f.kind)}</b><p>${escapeHtml(f.reason)}</p><p>Evidence: ${escapeHtml((f.evidence||[]).join(' · '))}</p></div>`).join(''):'<p>No findings returned. This does not certify the data as error-free.</p>';$('code').textContent=j.code;$('result').style.display='block';$('state').textContent='Completed using '+j.model;}catch(e){$('state').textContent=e.message;$('state').className='status error'}finally{$('go').disabled=false}});
-$('save').addEventListener('click',()=>{if(!latestResponse)return;const file=new Blob([JSON.stringify(latestResponse,null,2)],{type:'application/json'});const url=URL.createObjectURL(file);const link=document.createElement('a');link.href=url;link.download='exceptionforge-result.json';link.click();URL.revokeObjectURL(url)});
-$('probe').addEventListener('click',async()=>{$('probe').disabled=true;$('probeStatus').textContent='Running isolated probe…';try{const r=await fetch('/api/containment-probe',{method:'POST'});const j=await r.json();if(!r.ok)throw Error(j.detail||'Probe failed');$('probeStatus').textContent=j.passed?'PASS · network blocked':'FAIL / INDETERMINATE · do not deploy';$('probeOutput').textContent=JSON.stringify(j,null,2);$('probeOutput').style.display='block'}catch(e){$('probeStatus').textContent='NOT TESTED · '+e.message}finally{$('probe').disabled=false}});
-</script></main></body></html>
+'use strict';
+const $=id=>document.getElementById(id);
+const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let latestResponse=null, allFindings=[], page=0, selected=0, activeView='empty';
+const PAGE_SIZE=4;
+function status(message,kind=''){$('state').textContent=message;$('state').className='status '+kind}
+function showView(name){activeView=name;$('empty').hidden=name!=='empty';$('report').hidden=name!=='report';$('probeView').hidden=name!=='probe';$('back').hidden=name!=='probe'||!latestResponse;$('save').hidden=name!=='report'||!latestResponse;$('viewCode').hidden=name!=='report'||!latestResponse}
+for(const id of ['po','gr','inv']){$(id).addEventListener('change',()=>{const file=$(id).files[0];$(id+'Name').textContent=file?file.name:'No file selected';$('wrap-'+id).classList.toggle('ready',!!file);const number=['po','gr','inv'].filter(x=>$(x).files.length).length;$('fileCount').textContent=number+' / 3 ready';status(number===3?'All three CSV files selected.':'Choose all three sources to begin.')})}
+function renderRecord(){const item=allFindings[selected];$('detail').innerHTML=item?`<h3>Evidence inspector</h3><div class="detail-title"><span>${escapeHtml(item.invoice_ref)}</span><span class="eyebrow">Human review</span></div><p>${escapeHtml(item.reason)}</p><div class="evidence">${escapeHtml((item.evidence||[]).join('  ·  '))}</div>`:'<h3>Evidence inspector</h3><p>No findings to inspect. This does not certify that the data is error-free.</p>';for(const [i,node] of [...$('findings').children].entries()){const index=page*PAGE_SIZE+i;node.classList.toggle('selected',index===selected);node.setAttribute('aria-pressed',String(index===selected))}}
+function renderPage(){const totalPages=Math.max(1,Math.ceil(allFindings.length/PAGE_SIZE));page=Math.min(Math.max(page,0),totalPages-1);$('pageLabel').textContent=allFindings.length?`${page+1} / ${totalPages}`:'0 findings';$('prev').disabled=page===0;$('next').disabled=page>=totalPages-1;$('findings').replaceChildren();const items=allFindings.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);for(let offset=0;offset<items.length;offset++){const item=items[offset],index=page*PAGE_SIZE+offset;const button=document.createElement('button');button.className='finding';button.type='button';button.innerHTML=`<span class="ref">${escapeHtml(item.invoice_ref)}</span><span class="type">${escapeHtml(String(item.kind).replaceAll('_',' '))}</span><span class="reason">${escapeHtml(item.reason)}</span>`;button.addEventListener('click',()=>{selected=index;renderRecord()});$('findings').append(button)}renderRecord()}
+$('prev').addEventListener('click',()=>{if(page>0){page--;selected=page*PAGE_SIZE;renderPage()}});
+$('next').addEventListener('click',()=>{if((page+1)*PAGE_SIZE<allFindings.length){page++;selected=page*PAGE_SIZE;renderPage()}});
+$('form').addEventListener('submit',async event=>{event.preventDefault();$('go').disabled=true;status('Analysing securely. Generated code executes only in Docker…');$('outputSubtitle').textContent='Analysis in progress';showView('empty');$('empty').querySelector('h3').textContent='Investigation running';$('empty').querySelector('p').textContent='The report will appear in this same panel once evidence validation finishes.';try{const r=await fetch('/api/analyse',{method:'POST',body:new FormData(event.target)});const j=await r.json();if(!r.ok)throw Error(typeof j.detail==='string'?j.detail:'Analysis unavailable');latestResponse=j;allFindings=j.report.findings||[];page=0;selected=0;$('metrics').innerHTML=[[allFindings.length,'Exceptions'],[j.report.analysed_invoices,'Invoices analysed'],[j.elapsed_seconds+'s','Elapsed'],[j.attempts-1,'Corrections']].map(([v,l])=>`<div class="metric"><b>${escapeHtml(v)}</b><span>${escapeHtml(l)}</span></div>`).join('');renderPage();$('code').textContent=j.code;$('outputSubtitle').textContent='Model: '+j.model;showView('report');status('Investigation completed. Review the evidence.','ok')}catch(error){$('outputSubtitle').textContent='No verified result produced';$('empty').querySelector('h3').textContent='Analysis unavailable';$('empty').querySelector('p').textContent='No result was generated. Check the status beside the action button.';showView('empty');status(error.message,'error')}finally{$('go').disabled=false}});
+$('save').addEventListener('click',()=>{if(!latestResponse)return;const file=new Blob([JSON.stringify(latestResponse,null,2)],{type:'application/json'});const url=URL.createObjectURL(file);const link=document.createElement('a');link.href=url;link.download='exceptionforge-result.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),300)});
+$('probe').addEventListener('click',async()=>{$('probe').disabled=true;$('probeStatus').textContent='RUNNING';$('probeResult').className='result-mark';$('probeResult').textContent='RUNNING';$('probeOutput').textContent='Attempting a real restricted-container network connection…';showView('probe');$('outputSubtitle').textContent='Independent sandbox verification';try{const r=await fetch('/api/containment-probe',{method:'POST'});const j=await r.json();if(!r.ok)throw Error(typeof j.detail==='string'?j.detail:'Containment unavailable');$('probeResult').textContent=j.passed?'PASS · Connection blocked':'FAIL / INDETERMINATE';$('probeResult').className='result-mark '+(j.passed?'pass':'fail');$('probeStatus').textContent=j.passed?'PASS':'FAIL';$('probeOutput').textContent=JSON.stringify(j,null,2)}catch(error){$('probeStatus').textContent='NOT VERIFIED';$('probeResult').className='result-mark fail';$('probeResult').textContent='NOT VERIFIED';$('probeOutput').textContent=error.message}finally{$('probe').disabled=false}});
+$('back').addEventListener('click',()=>{showView('report');$('outputSubtitle').textContent='Model: '+latestResponse.model});
+$('viewCode').addEventListener('click',()=>$('codeDialog').showModal());$('closeCode').addEventListener('click',()=>$('codeDialog').close());
+showView('empty');
+</script>
+</body>
+</html>

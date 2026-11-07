@@ -1,6 +1,6 @@
 # ExceptionForge (Vultr: Agent Rush 2026) — Stage 1
 
-**Status: LOCAL PROTOTYPE.** Original code authored on 04/11/2026, after the announced competition start. No Vultr VM deployment, no live Serverless Inference call, and no Docker execution has been verified in the provided environment. Never label these as passed until tested on the actual target.
+**Status: STAGE 2 LOCAL PROTOTYPE (07/11/2026).** Original Stage 1 code authored on 04/11/2026, after the announced competition start. Stage 2 is a controlled packaging, validation, testing and UI iteration. No Vultr VM deployment, no live Serverless Inference call, and no Docker execution has been verified. Never label these as passed until tested on the actual target. The Stage 1 archive and g9it main remain as preserved baseline.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ Investigate procurement exceptions missed by conventional ERP three-way matching
 
 The model writes code for *unfamiliar column names, units and cross-file relationships*. The deterministic part validates source references and enforces the runtime boundary. The prototype must demonstrate superiority to a static exact-column baseline; this has **not yet been measured**.
 
-## Local setup (Python 3.11+, Docker Engine required)
+## Local setup (Python 3.11+, Docker Engine required for live sandbox only)
 
 ```bash
 python -m venv .venv
@@ -18,7 +18,7 @@ python -m venv .venv
 # On Linux/macOS: source .venv/bin/activate
 pip install -e '.[test]'
 python -m tools.generate_fixture --output demo_data
-pytest -q
+python -m pytest -q
 ```
 
 Before running live inference, create a separate, restricted **Vultr Serverless Inference API key**. Never paste or commit its value. Configure via local environment variables, e.g. (PowerShell):
@@ -31,7 +31,9 @@ uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Open `http://127.0.0.1:8000`, then upload the three files in `demo_data` **which contain only CSV files**.
 
-A missing key or missing Docker fails closed. No simulated model call or Docker replay is silently substituted.
+A missing key or missing Docker fails closed. No simulated model call or Docker replay is silently substituted. You can view the local interface and run regression tests without credentials or Docker, but a full investigation cannot be completed in that environment.
+
+**Stage 2 improvements:** explicit setuptools package discovery fixes editable installation; strict CSV upload parsing, physical-line evidence references and invoice-ID validation strengthen provenance; invalid cited reports trigger up to three code repairs; 26 local tests pass. The desktop application keeps uploads, results and verification status in one viewport at 1280×720 and 1366×768 in browser layout checks. Mobile uses normal vertical scrolling. Browser-only report previews are simulated **for layout tests only**, never results of a real model run.
 
 ### Independently measure quality on the original fixture
 
@@ -41,7 +43,7 @@ Save the live `/api/analyse` JSON output to `result.json` (the report is inside 
 python -m tools.evaluate --response result.json --truth demo_data_truth/ground_truth.json
 ```
 
-**Gate by evening 04/11/2026 (Europe/London):** at least 14 of 15 planted anomalies detected; zero findings on known-clean invoices; at most three code corrections; less than 180 seconds elapsed; live containment test blocked. If not met, simplify the data once and retest, then decide NO-GO. Do not adjust the gold labels after seeing agent results.
+**Gate before submission on 08/11/2026 (Europe/London):** at least 14 of 15 planted anomalies detected; zero findings on known-clean invoices; at most three code corrections; less than 180 seconds elapsed; live containment test blocked. If not met, simplify the data once and retest, then decide NO-GO. Do not adjust the gold labels after seeing agent results.
 
 ## Defence in depth
 
@@ -66,7 +68,7 @@ python -m tools.evaluate --response result.json --truth demo_data_truth/ground_t
 
 ## Hackathon submission (not yet complete)
 
-- Public MIT GitHub repository (this package has MIT license, but has not been published).
+- Public MIT GitHub repository (currently private; publication only after user approval).
 - Vultr Cloud Compute deployment and public application URL, verified by external access.
 - Live Vultr Serverless Inference interactions, verified by logs and real API responses.
 - Actual containment moment in video (not just a written claim).
@@ -78,3 +80,11 @@ python -m tools.evaluate --response result.json --truth demo_data_truth/ground_t
 - [Vultr inference API](https://api.vultrinference.com/docs)
 
 **Competition differentiation:** Unlike generic sandbox demos or invoice-to-payment approval apps, ExceptionForge focuses on data reconciliation across non-standard procurement exports and on source-grounded, reviewable exceptions. This advantage remains an untested hypothesis until benchmarked.
+
+## Stage 2 local verification (07/11/2026)
+
+- Editable installation: tested with `python -m pip install --no-build-isolation --no-deps -e .` (PASS in the provided Linux environment; full dependency resolution on a clean Windows machine has not been re-tested).
+- Unit/regression/failure-path tests: `python -m pytest -q` => 26 passed (local/mocked paths only).
+- Live local HTTP negative tests: `POST /api/analyse` => 503 (Vultr key absent); `POST /api/containment-probe` => 503 (Docker CLI absent). In both cases the API correctly refuses to claim success.
+- Chromium layout tests: 1280×720, 1366×768 and 1440×900 have no page-level scroll in initial state; 1280×720 and 1366×768 have no page-level scroll in report UI preview; 390×844 has responsive mobile layout with deliberate vertical scrolling. These are **static/mocked UI state** verifications, not live inference results.
+- Still untested: Vultr Cloud Compute, Vultr Serverless Inference, actual Docker execution or containment, real 15-anomaly recall, deployed public URL.
