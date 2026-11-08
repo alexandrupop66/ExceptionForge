@@ -10,13 +10,14 @@ import tempfile
 import time
 from typing import Annotated
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, HTTPException, UploadFile, Path as ApiPath
 from fastapi.responses import FileResponse
 
 from .inference import analyse
+from .local_analysis import analyse_local
 from .sandbox import SandboxError, containment_probe
 
-app = FastAPI(title="ExceptionForge", version="0.2.0", docs_url=None, redoc_url=None)
+app = FastAPI(title="ExceptionForge", version="0.2.1", docs_url=None, redoc_url=None)
 ROOT = Path(__file__).resolve().parent
 FILENAMES = ("purchase_orders.csv", "goods_receipts.csv", "invoices.csv")
 MAX_UPLOAD = 300_000
@@ -30,7 +31,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"service": "exceptionforge", "version": "0.2.0", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "docker-required", "vultr_deployment": "not-verified"}
+    return {"service": "exceptionforge", "version": "0.2.1", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "vultr-ai-requires-docker; local-rules-available", "vultr_deployment": "not-verified"}
 
 
 def _save_upload(upload: UploadFile, target: Path) -> None:
@@ -153,6 +154,42 @@ def analyse_files(
         except Exception as exc:
             # Avoid leaking credential, dataset content or vendor API response in HTTP errors.
             raise HTTPException(503, detail="Inference or sandbox execution unavailable; no analysis result was produced") from exc
+
+
+@app.get("/api/demo-data/{filename}")
+def demo_data_file(filename: str = ApiPath(min_length=1, max_length=100)):
+    """Serve ONLY known, synthetic sample CSV files bundled with the project."""
+    if filename not in FILENAMES:
+        raise HTTPException(404, detail="Unknown demo CSV")
+    return FileResponse(ROOT.parent / "demo_data" / filename, media_type="text/csv")
+
+
+@app.post("/api/local-analyse")
+def local_analyse_files(
+    purchase_orders: Annotated[UploadFile, File()],
+    goods_receipts: Annotated[UploadFile, File()],
+    invoices: Annotated[UploadFile, File()],
+):
+    """Explicit opt-in deterministic baseline; no model, network or Docker."""
+    start = time.monotonic()
+    with tempfile.TemporaryDirectory(prefix="exceptionforge-local-") as temp:
+        source = Path(temp)
+        for upload, filename in zip((purchase_orders, goods_receipts, invoices), FILENAMES):
+            _save_upload(upload, source / filename)
+        try:
+            report = _check_evidence(analyse_local(source), source)
+        except SandboxError as exc:
+            raise HTTPException(422, detail=str(exc)) from exc
+        return {
+            "engine": "local_rules",
+            "model": None,
+            "code": None,
+            "attempts": 0,
+            "sandbox": None,
+            "report": report,
+            "elapsed_seconds": round(time.monotonic() - start, 4),
+            "disclaimer": "LOCAL DETERMINISTIC ANALYSIS. No AI/Vultr inference, Docker, containment proof, payment action or external request was performed. Results apply only to supported CSV schemas and require human review.",
+        }
 
 
 @app.post("/api/containment-probe")

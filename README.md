@@ -88,3 +88,24 @@ python -m tools.evaluate --response result.json --truth demo_data_truth/ground_t
 - Live local HTTP negative tests: `POST /api/analyse` => 503 (Vultr key absent); `POST /api/containment-probe` => 503 (Docker CLI absent). In both cases the API correctly refuses to claim success.
 - Chromium layout tests: 1280×720, 1366×768 and 1440×900 have no page-level scroll in initial state; 1280×720 and 1366×768 have no page-level scroll in report UI preview; 390×844 has responsive mobile layout with deliberate vertical scrolling. These are **static/mocked UI state** verifications, not live inference results.
 - Still untested: Vultr Cloud Compute, Vultr Serverless Inference, actual Docker execution or containment, real 15-anomaly recall, deployed public URL.
+
+## Stage 2.1: Local deterministic demonstration (08/11/2026)
+
+This mode is **not** Vultr AI, not an autonomous agent, and not a proof of Docker isolation. It is an explicit, deterministic baseline to show real input-to-report interaction while Vultr access is pending. It must not be misrepresented as fulfilment of the hackathon's mandatory Vultr integrations.
+
+### Start on the Windows laptop (reuse existing Stage 1 virtual environment)
+
+1. Keep Stage 2 intact. Extract `ExceptionForge_Local_Demo_2026-11-08.zip` into a **new folder**, not over Stage 2.
+2. Open PowerShell in the extracted `ExceptionForge` folder.
+3. Run (adapt the Stage 1 path only if its virtual environment has moved):
+
+```powershell
+& "C:\Users\alexa\Desktop\ExceptionForge_Stage1_download\ExceptionForge\.venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+4. Open `http://127.0.0.1:8000` (refresh if an older browser tab is cached).
+5. Leave **Local analysis** selected, click **Load sample CSVs**, then **Run local analysis**. Results include source CSV row citations and a downloadable JSON report labelled `LOCAL`.
+
+The analysis requires no Vultr key, Docker, network access or payments. It accepts the **specific documented sample schema**, not arbitrary ERP exports. Other schemas return a clear error instead of guessed results. The original **Vultr AI (live)** mode and **Test containment** remain separate; without their real dependencies, they continue to fail closed. The bundled `demo_data_truth` is only for offline benchmark testing, never read by the local analyser.
+
+A local test on the synthetic fixture detected all 15 known anomalous invoice IDs with no known-clean IDs flagged. This is **not** an accuracy measurement on real-world procurement data, and does not measure AI inference quality.

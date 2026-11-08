@@ -25,7 +25,8 @@ def test_no_api_key_cannot_fake_result(monkeypatch):
 def test_single_screen_is_present():
     r = TestClient(app).get("/")
     assert r.status_code == 200
-    assert "Investigate exceptions" in r.text
+    assert "Run local analysis" in r.text
+    assert "Vultr AI (live)" in r.text
     assert 'lang="en-GB"' in r.text
 
 def test_rejects_empty_file_before_model(monkeypatch):
