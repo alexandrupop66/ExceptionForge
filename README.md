@@ -1,6 +1,6 @@
-# ExceptionForge (Vultr: Agent Rush 2026) — Stage 1
+# ExceptionForge (Vultr: Agent Rush 2026) — Stage 2.2 Security Gate
 
-**Status: STAGE 2 LOCAL PROTOTYPE (07/11/2026).** Original Stage 1 code authored on 04/11/2026, after the announced competition start. Stage 2 is a controlled packaging, validation, testing and UI iteration. No Vultr VM deployment, no live Serverless Inference call, and no Docker execution has been verified. Never label these as passed until tested on the actual target. The Stage 1 archive and g9it main remain as preserved baseline.
+**Status: STAGE 2.2 LOCAL PROTOTYPE (08/11/2026).** Original Stage 1 code authored on 04/11/2026, after the announced competition start. Stage 2 is a controlled packaging, validation, testing and UI iteration. No Vultr VM deployment, no live Serverless Inference call, and no Docker execution has been verified. Never label these as passed until tested on the actual target. Stage 1, Stage 2 and the local demo remain preserved on separate branches and archives.
 
 ## Purpose
 
@@ -24,14 +24,13 @@ python -m pytest -q
 Before running live inference, create a separate, restricted **Vultr Serverless Inference API key**. Never paste or commit its value. Configure via local environment variables, e.g. (PowerShell):
 
 ```powershell
-$env:VULTR_INFERENCE_API_KEY = "<YOUR_PRIVATE_KEY>"
-$env:VULTR_MODEL = "deepseek-v4.1-flash-1017"
+# LOCAL MODE: no credentials needed. Leave EXCEPTIONFORGE_ENABLE_LIVE unset.
 uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Open `http://127.0.0.1:8000`, then upload the three files in `demo_data` **which contain only CSV files**.
 
-A missing key or missing Docker fails closed. No simulated model call or Docker replay is silently substituted. You can view the local interface and run regression tests without credentials or Docker, but a full investigation cannot be completed in that environment.
+Live API requests are disabled unless explicitly enabled by the server operator. A missing access token, inference key, Docker daemon or pre-pulled Docker image fails closed. No simulated model call or Docker replay is silently substituted. You can view the local interface and run regression tests without credentials or Docker, but a full investigation cannot be completed in that environment.
 
 **Stage 2 improvements:** explicit setuptools package discovery fixes editable installation; strict CSV upload parsing, physical-line evidence references and invoice-ID validation strengthen provenance; invalid cited reports trigger up to three code repairs; 26 local tests pass. The desktop application keeps uploads, results and verification status in one viewport at 1280×720 and 1366×768 in browser layout checks. Mobile uses normal vertical scrolling. Browser-only report previews are simulated **for layout tests only**, never results of a real model run.
 
@@ -109,3 +108,18 @@ This mode is **not** Vultr AI, not an autonomous agent, and not a proof of Docke
 The analysis requires no Vultr key, Docker, network access or payments. It accepts the **specific documented sample schema**, not arbitrary ERP exports. Other schemas return a clear error instead of guessed results. The original **Vultr AI (live)** mode and **Test containment** remain separate; without their real dependencies, they continue to fail closed. The bundled `demo_data_truth` is only for offline benchmark testing, never read by the local analyser.
 
 A local test on the synthetic fixture detected all 15 known anomalous invoice IDs with no known-clean IDs flagged. This is **not** an accuracy measurement on real-world procurement data, and does not measure AI inference quality.
+
+## Stage 2.2 targeted security gate (08/11/2026)
+
+**Authorised scope:** restrict inference/Docker endpoints, preserve working local demo, add tests; no cloud infrastructure, purchases or deployment.
+
+- `POST /api/analyse` (Vultr AI) and `POST /api/containment-probe` (Docker) are **disabled by default**, including when a key exists.
+- Live activation requires **both** `EXCEPTIONFORGE_ENABLE_LIVE=true` and a randomly generated `EXCEPTIONFORGE_ACCESS_TOKEN` of at least 32 printable ASCII characters, configured **server-side only**. Each live HTTP request must send `Authorization: Bearer <token>`. The UI accepts a *demo access token* only when Vultr AI mode is selected; it keeps the token in memory, not in local storage, URLs or the source code. Do not mistake this token for the Vultr API key.
+- All live operations share a process-wide rolling budget: **4 accepted requests per hour, 10 per 24 hours and 1 active request**. `429` includes `Retry-After`. Failed admitted requests consume quota. The separate local-analysis endpoint has a **60/minute, 500/day, 2 concurrent** limit, and needs no credentials.
+- Before making any model call, the live API now checks for Docker CLI, working daemon and an **already downloaded** `python:3.12-alpine` image. It does not automatically pull the image or run generated Python on the host. AI completions are capped to **4096 output tokens per attempt**, with a maximum of four attempts already present.
+- These limits are **not a financial cap**. Process restarts and multiple Uvicorn workers reset or multiply limits. Use exactly **one worker** for this demo, plus Vultr provider-side spending controls, a trusted TLS reverse proxy, request/body-size controls, private network access to Docker and observability before public deployment. Do not treat the token as sufficient production security.
+- The original local analysis and static sample CSVs remain available without the token, but this service is **not approved for untrusted customer data or public exposure** without further hardening.
+
+**When credits and a separate deployment/spend approval are confirmed**, use a unique server-side token, the actual inference credential, a running Docker daemon and a pre-pulled image. Only then should the operator explicitly set the live flag to true. Local browser access via `127.0.0.1` is safe for a demonstration; public access must use HTTPS and a rate-limited reverse proxy. Do not grant judges a reusable admin token in a public repository or presentation.
+
+The Stage 2.2 tests cover rejection without credentials, invalid tokens, quota/concurrency, daemon/image preflight, mocked authorisation success and regression of the 15 synthetic findings. **They do not verify paid inference, a real container, or network isolation.** See `docs/SECURITY_GATE_EVIDENCE.md`.

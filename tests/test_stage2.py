@@ -34,16 +34,14 @@ def uploads(po=b"A,B\nx,y\n", receipt=b"A,B\nx,y\n", invoice=b"Bill Number,Notes
     (b"A,B\n", "no records"),
     (b"A,B\n\"unterminated,2\n", "Invalid CSV"),
 ])
-def test_rejects_broken_upload_without_invoking_agent(monkeypatch, bad, expected):
-    monkeypatch.delenv("VULTR_INFERENCE_API_KEY", raising=False)
-    response = TestClient(app).post("/api/analyse", files=uploads(po=bad))
+def test_rejects_broken_upload_without_invoking_agent(monkeypatch, enabled_api, bad, expected):
+    response = TestClient(app).post("/api/analyse", files=uploads(po=bad), headers=enabled_api)
     assert response.status_code == 422
     assert expected in response.json()["detail"]
 
 
-def test_rejects_oversized_upload_without_invoking_agent(monkeypatch):
-    monkeypatch.delenv("VULTR_INFERENCE_API_KEY", raising=False)
-    r = TestClient(app).post("/api/analyse", files=uploads(po=b"A,B\n"+b"a,"+b"b"*300_000))
+def test_rejects_oversized_upload_without_invoking_agent(monkeypatch, enabled_api):
+    r = TestClient(app).post("/api/analyse", files=uploads(po=b"A,B\n"+b"a,"+b"b"*300_000), headers=enabled_api)
     assert r.status_code == 413
 
 

@@ -14,10 +14,12 @@ from fastapi import FastAPI, File, HTTPException, UploadFile, Path as ApiPath
 from fastapi.responses import FileResponse
 
 from .inference import analyse
+from .access import access_middleware
 from .local_analysis import analyse_local
-from .sandbox import SandboxError, containment_probe
+from .sandbox import SandboxError, containment_probe, require_docker_ready
 
-app = FastAPI(title="ExceptionForge", version="0.2.1", docs_url=None, redoc_url=None)
+app = FastAPI(title="ExceptionForge", version="0.2.2", docs_url=None, redoc_url=None)
+app.middleware("http")(access_middleware)
 ROOT = Path(__file__).resolve().parent
 FILENAMES = ("purchase_orders.csv", "goods_receipts.csv", "invoices.csv")
 MAX_UPLOAD = 300_000
@@ -31,7 +33,7 @@ def index():
 
 @app.get("/health")
 def health():
-    return {"service": "exceptionforge", "version": "0.2.1", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "vultr-ai-requires-docker; local-rules-available", "vultr_deployment": "not-verified"}
+    return {"service": "exceptionforge", "version": "0.2.2", "inference_configured": bool(os.getenv("VULTR_INFERENCE_API_KEY")), "execution_mode": "vultr-ai-requires-docker; local-rules-available", "vultr_deployment": "not-verified"}
 
 
 def _save_upload(upload: UploadFile, target: Path) -> None:
@@ -145,6 +147,7 @@ def analyse_files(
         for upload, filename in zip((purchase_orders, goods_receipts, invoices), FILENAMES):
             _save_upload(upload, source / filename)
         try:
+            require_docker_ready()  # No inference billing if Docker daemon/image is unavailable.
             result = analyse(source, validate_report=lambda report: _check_evidence(report, source))
             result["elapsed_seconds"] = round(time.monotonic() - start, 3)
             result["security_notice"] = "Invoice text was treated as untrusted data. No payment actions are supported."

@@ -45,7 +45,7 @@ def schema_preview(data_dir: Path) -> dict:
 
 
 def ask_model(client: OpenAI, model: str, messages: list[dict]) -> tuple[str, str]:
-    response = client.chat.completions.create(model=model, messages=messages, temperature=0, timeout=25)
+    response = client.chat.completions.create(model=model, messages=messages, temperature=0, max_tokens=4096, timeout=25)
     answer = (response.choices[0].message.content or "").strip()
     if answer.startswith("```"):
         answer = re.sub(r"^```(?:python)?\s*|\s*```$", "", answer).strip()

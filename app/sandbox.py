@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import uuid
@@ -23,6 +24,30 @@ ALLOWED_IMPORTS = frozenset({"csv", "json", "collections", "decimal", "math", "r
 
 class SandboxError(RuntimeError):
     pass
+
+
+
+def require_docker_ready() -> None:
+    """Fail before any billed model call when the Docker runtime cannot run code.
+
+    The image must be pulled intentionally in advance. This is a readiness
+    preflight, NOT a proof of network isolation or container security.
+    """
+    if not shutil.which("docker"):
+        raise SandboxError("Docker CLI unavailable. Vultr inference was NOT attempted")
+    commands = (
+        (["docker", "info", "--format", "{{.ServerVersion}}"], "Docker daemon unavailable"),
+        (["docker", "image", "inspect", IMAGE], "Sandbox image not available locally; pull it explicitly before live analysis"),
+    )
+    for command, explanation in commands:
+        try:
+            result = subprocess.run(command, capture_output=True, text=True,
+                                    timeout=5, check=False,
+                                    env={"PATH": os.getenv("PATH", "")})
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise SandboxError(explanation + ". Vultr inference was NOT attempted") from exc
+        if result.returncode != 0:
+            raise SandboxError(explanation + ". Vultr inference was NOT attempted")
 
 
 def validate_code(code: str) -> None:

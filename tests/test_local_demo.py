@@ -112,8 +112,8 @@ def test_samples_exact_files_and_unknown_not_exposed():
     assert client.get('/api/demo-data/.env').status_code==404
 
 
-def test_original_vultr_api_still_fails_closed_without_key(monkeypatch):
+def test_original_vultr_api_still_fails_closed_without_key(monkeypatch, enabled_api):
     monkeypatch.delenv('VULTR_INFERENCE_API_KEY',raising=False)
-    response=TestClient(app).post('/api/analyse',files=as_fields(upload_payload(ROOT/'demo_data')))
+    response=TestClient(app).post('/api/analyse',files=as_fields(upload_payload(ROOT/'demo_data')),headers=enabled_api)
     assert response.status_code==503
     assert 'key missing' in response.json()['detail']
